@@ -4,13 +4,12 @@ import sys
 import msgpack
 
 
-def run_message(message):
+def is_expression(statement):
     try:
-        return {'result': eval(message['statement']),
-                'error': None}
-    except Exception as e:
-        return {'result': None,
-                'error': e.message}
+        compile(statement, '<string>', 'eval')
+        return True
+    except SyntaxError:
+        return False
 
 
 if __name__ == '__main__':
@@ -22,6 +21,20 @@ if __name__ == '__main__':
         unpacker.feed(data)
 
         for message in unpacker:
-            result = packer.pack(run_message(message))
-            sys.stdout.write(result)
+            result, error = None, None
+            statement = message['statement']
+
+            try:
+                if is_expression(statement):
+                    result = eval(statement)
+                else:
+                    exec(statement)
+            except Exception as e:
+                error = e.message
+
+            result_message = packer.pack({
+                'result': result,
+                'error': error
+            })
+            sys.stdout.write(result_message)
             sys.stdout.flush()
