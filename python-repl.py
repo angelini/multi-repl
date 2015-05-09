@@ -32,9 +32,9 @@ if __name__ == '__main__':
             except Exception as e:
                 error = e.message
 
-            result_message = packer.pack({
+            response = packer.pack({
                 'result': result,
                 'error': error
             })
-            sys.stdout.write(result_message)
+            sys.stdout.write(response)
             sys.stdout.flush()

@@ -28,16 +28,38 @@
 (defn new-repl [command]
   (map->Repl {:command command}))
 
+(defn format-response [response]
+  (clojure.set/rename-keys response {"result" :result
+                                     "error" :error}))
+
 (defn eval-in-repl [repl statement]
   (let [{:keys [sink source proc]} repl
         message {:statement statement}]
     (msgpack/pack-stream message sink)
     (.flush sink)
-    (msgpack/unpack-stream source)))
+    (format-response (msgpack/unpack-stream source))))
 
 (defn start-python-repl []
   (-> (new-repl ["python" "-u" "python-repl.py"])
       (component/start)))
 
+(defn print-prompt []
+  (print "> ")
+  (.flush *out*))
+
+(defn run-line [repl line]
+  (if (= line "exit")
+    (do (component/stop repl)
+        (System/exit 0))
+    (let [{:keys [error result]} (eval-in-repl repl line)]
+        (if error
+          (println "ERROR:" error)
+          (println result)))))
+
 (defn -main [& args]
-  (println "Hello, World!"))
+  (let [repl (start-python-repl)]
+    (print-prompt)
+    (loop [line (read-line)]
+      (run-line repl line)
+      (print-prompt)
+      (recur (read-line)))))
