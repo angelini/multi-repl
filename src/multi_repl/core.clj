@@ -85,6 +85,17 @@
   (binding [*out* (:out console)]
     (apply println args)))
 
+(defn add-to-history [console command]
+  (-> (:reader console)
+      .getHistory
+      (.add (str command "\r"))))
+
+(defn remove-n-from-history [console n]
+  (let [history (-> (:reader console)
+                    .getHistory)]
+    (dotimes [_ n]
+      (.removeLast history))))
+
 (defn drop-first-and-last [v]
   (subvec v 1 (- (count v) 1)))
 
@@ -104,10 +115,12 @@
     (loop [buffer [line]]
       (print-err "buffer" buffer)
       (if (= (last buffer) "%r")
-        (->> buffer
-             drop-first-and-last
-             (clojure.string/join "\n")
-             (eval-and-print system))
+        (let [command (->> buffer
+                           drop-first-and-last
+                           (clojure.string/join "\n"))]
+          (remove-n-from-history console (count buffer))
+          (add-to-history console command)
+          (eval-and-print system command))
         (recur (->> (read-console-line console)
                     (conj buffer)))))))
 
