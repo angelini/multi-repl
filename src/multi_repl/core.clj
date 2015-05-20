@@ -37,6 +37,7 @@
 (defn new-repl [command]
   (map->Repl {:command command}))
 
+
 (defn format-response [response]
   (clojure.set/rename-keys response {"result" :result
                                      "error" :error}))
@@ -48,33 +49,70 @@
     (.flush sink)
     (format-response (msgpack/unpack-stream source))))
 
+
+(defrecord Console [prompt reader out]
+  component/Lifecycle
+
+  (start [this]
+    (if reader
+      this
+      (let [reader (ConsoleReader.)
+            out (PrintWriter. (.getOutput reader))]
+        (.setPrompt reader "> ")
+        (print-err ";; Starting console")
+        (assoc this
+               :reader reader
+               :out out))))
+
+  (stop [this]
+    (if (not reader)
+      this
+      (do (print-err ";; Stopping console")
+          (.close out)
+          (dissoc this :reader :out)))))
+
+(defn new-console [prompt]
+  (map->Console {:prompt prompt}))
+
+(defn read-console-line [console]
+  (.flush (:out console))
+  (some-> (:reader console)
+          .readLine
+          clojure.string/trim))
+
+(defn println-console [console & args]
+  (binding [*out* (:out console)]
+    (apply println args)))
+
+(defmulti run-line (fn [system line] line))
+
+(defmethod run-line "exit" [system _]
+  (component/stop system)
+  (System/exit 0))
+
+(defmethod run-line :default [system line]
+  (let [{:keys [repl console]} system
+        {:keys [error result]} (eval-in-repl repl line)]
+    (if error
+      (println-console console "ERROR:" error)
+      (println-console console result))))
+
 (defn start-python-repl []
   (-> (new-repl ["python" "-u" "python-repl.py"])
       (component/start)))
 
-(defn read-line [reader]
-  (-> (.readLine reader)
-      clojure.string/trim))
+(def commands
+  {:python ["python" "-u" "python-repl.py"]})
 
-(defmulti run-line (fn [repl line] line))
-
-(defmethod run-line "exit" [repl _]
-  (component/stop repl)
-  (System/exit 0))
-
-(defmethod run-line :default [repl line]
-  (let [{:keys [error result]} (eval-in-repl repl line)]
-    (if error
-      (println "ERROR:" error)
-      (println result))))
+(defn new-system [prompt type]
+  (component/system-map :repl (new-repl (get commands type))
+                        :console (new-console "> ")))
 
 (defn -main [& args]
-  (let [repl (start-python-repl)
-        reader (ConsoleReader.)
-        out (PrintWriter. (.getOutput reader))]
-    (.setPrompt reader "> ")
-    (loop [line (read-line reader)]
+  (let [system (-> (new-system "> " :python)
+                   component/start)
+        console (:console system)]
+    (loop [line (read-console-line console)]
       (print-err "line" line)
-      (run-line repl line)
-      (.flush out)
-      (recur (read-line reader)))))
+      (run-line system line)
+      (recur (read-console-line console)))))
