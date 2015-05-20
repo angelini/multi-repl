@@ -1,5 +1,5 @@
 (defproject multi-repl "0.1.0-SNAPSHOT"
-  :description "Multi language REPL controller"
+  :description "REPL with pluggable backends"
   :url "https://github.com/angelini/multi-repl"
   :license {:name "The MIT License (MIT)"
             :url "https://github.com/angelini/multi-repl/blob/master/LICENSE"}
