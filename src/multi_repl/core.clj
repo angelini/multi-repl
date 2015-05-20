@@ -84,18 +84,36 @@
   (binding [*out* (:out console)]
     (apply println args)))
 
+(defn drop-first-and-last [v]
+  (subvec v 1 (- (count v) 1)))
+
+(defn eval-and-print [system line]
+  (let [{:keys [repl console]} system
+        {:keys [error result]} (eval-in-repl repl line)]
+    (if error
+      (println-console console "ERROR:" error)
+      (println-console console result))))
+
 (defmulti run-line (fn [system line] line))
+
+(defmethod run-line "%b" [system line]
+  (let [console (:console system)]
+    (loop [buffer [line]]
+      (print-err "buffer" buffer)
+      (if (= (last buffer) "%r")
+        (->> buffer
+             drop-first-and-last
+             (clojure.string/join "\n")
+             (eval-and-print system))
+        (recur (->> (read-console-line console)
+                    (conj buffer)))))))
 
 (defmethod run-line "exit" [system _]
   (component/stop system)
   (System/exit 0))
 
 (defmethod run-line :default [system line]
-  (let [{:keys [repl console]} system
-        {:keys [error result]} (eval-in-repl repl line)]
-    (if error
-      (println-console console "ERROR:" error)
-      (println-console console result))))
+  (eval-and-print system line))
 
 (defn start-python-repl []
   (-> (new-repl ["python" "-u" "python-repl.py"])
