@@ -79,7 +79,7 @@
   (.flush (:out console))
   (some-> (:reader console)
           .readLine
-          clojure.string/trim))
+          clojure.string/trim-newline))
 
 (defn println-console [console & args]
   (binding [*out* (:out console)]
