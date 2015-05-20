@@ -21,7 +21,7 @@ if __name__ == '__main__':
         unpacker.feed(data)
 
         for message in unpacker:
-            result, error = None, None
+            result, error, etype = None, None, None
             statement = message['statement']
 
             try:
@@ -30,10 +30,12 @@ if __name__ == '__main__':
                 else:
                     exec(statement)
             except Exception as e:
+                etype = type(e).__name__
                 error = e.message
 
             response = packer.pack({
                 'result': result,
+                'etype': etype,
                 'error': error
             })
             sys.stdout.write(response)

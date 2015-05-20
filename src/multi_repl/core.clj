@@ -40,7 +40,8 @@
 
 (defn format-response [response]
   (clojure.set/rename-keys response {"result" :result
-                                     "error" :error}))
+                                     "error" :error
+                                     "etype" :etype}))
 
 (defn eval-in-repl [repl statement]
   (let [{:keys [sink source proc]} repl
@@ -88,10 +89,12 @@
   (subvec v 1 (- (count v) 1)))
 
 (defn eval-and-print [system line]
+  (print-err "line" line)
   (let [{:keys [repl console]} system
-        {:keys [error result]} (eval-in-repl repl line)]
+        {:keys [error etype result]} (eval-in-repl repl line)]
     (if error
-      (println-console console "ERROR:" error)
+      (do (println-console console "ETYPE:" etype)
+          (println-console console "ERROR:" error))
       (println-console console result))))
 
 (defmulti run-line (fn [system line] line))
@@ -131,6 +134,5 @@
                    component/start)
         console (:console system)]
     (loop [line (read-console-line console)]
-      (print-err "line" line)
       (run-line system line)
       (recur (read-console-line console)))))
