@@ -1,6 +1,6 @@
 (ns multi-repl.buffer
   (:require [multi-repl.utils :refer (print-err)]
-            [multi-repl.console :refer (cprint cprint-escape-seq read-console-char)]))
+            [multi-repl.console :as co]))
 
 (defn newline? [c] (= c 13))
 (defn escape?  [c] (= c 27))
@@ -32,36 +32,36 @@
 (defn read-buffer [console]
   (loop [buffer [[]]
          cursor [0 0]
-         c (read-console-char console)]
+         c (co/read-char console)]
     (print-err "buffer" buffer)
     (print-err "cursor" cursor)
-    (cprint console (char c))
+    (co/print console (char c))
     (cond
-      (escape? c) (let [[c1 c2] [(read-console-char console)
-                                 (read-console-char console)]]
-                    (cprint console (char c1))
-                    (cprint console (char c2))
+      (escape? c) (let [[c1 c2] [(co/read-char console)
+                                 (co/read-char console)]]
+                    (co/print console (char c1))
+                    (co/print console (char c2))
                     (condp = [c1 c2]
                       [91 65] (recur buffer
                                      (dec-y cursor)
-                                     (read-console-char console))
+                                     (co/read-char console))
                       [91 66] (recur buffer
                                      (inc-y cursor)
-                                     (read-console-char console))
+                                     (co/read-char console))
                       [91 67] (recur buffer
                                      (inc-x cursor)
-                                     (read-console-char console))
+                                     (co/read-char console))
                       [91 68] (recur buffer
                                      (dec-x cursor)
-                                     (read-console-char console))))
-      (newline? c) (do (cprint-escape-seq \S)
+                                     (co/read-char console))))
+      (newline? c) (do (co/print-escape-seq console \S)
                        (recur (conj buffer [])
                               (-> cursor inc-y (set-x 0))
-                              (read-console-char console)))
-      (percent? c) (let [c1 (read-console-char console)]
+                              (co/read-char console)))
+      (percent? c) (let [c1 (co/read-char console)]
                      (if (= c1 114)
                        (clojure.string/join "\n" (map #(apply str %) buffer))
                        (recur buffer cursor c1)))
       :else (recur (insert-char buffer cursor c)
                    (update-in cursor [0] inc)
-                   (read-console-char console)))))
+                   (co/read-char console)))))

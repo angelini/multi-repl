@@ -1,4 +1,5 @@
 (ns multi-repl.repl
+  (:refer-clojure :exclude [eval])
   (:require [msgpack.core :as msgpack]
             [me.raynes.conch.low-level :as sh]
             [com.stuartsierra.component :as component]
@@ -33,7 +34,7 @@
                                      "error" :error
                                      "etype" :etype}))
 
-(defn eval-in-repl [repl statement]
+(defn eval [repl statement]
   (let [{:keys [sink source proc]} repl
         message {:statement statement}]
     (msgpack/pack-stream message sink)

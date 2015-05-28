@@ -1,4 +1,5 @@
 (ns multi-repl.console
+  (:refer-clojure :exclude [print println read-line])
   (:require [com.stuartsierra.component :as component]
             [multi-repl.utils :refer (print-err)])
   (:import [java.io PrintWriter]
@@ -28,36 +29,35 @@
 (defn new-console [prompt]
   (map->Console {:prompt prompt}))
 
-(defn read-console-line [console]
+(defn read-line [console]
   (.flush (:out console))
   (some-> (:reader console)
           .readLine
           clojure.string/trim-newline))
 
-(defn read-console-char [console]
+(defn read-char [console]
   (.readCharacter (:reader console)))
 
-(defn cprint [console & args]
+(defn print [console & args]
   (binding [*out* (:out console)]
-    (apply print args)
+    (apply clojure.core/print args)
     (.flush *out*)))
 
-(defn cprintln [console & args]
+(defn println [console & args]
   (binding [*out* (:out console)]
-    (apply println args)))
+    (apply clojure.core/println args)))
 
-(defn cprint-escape-seq [console c]
-  (cprint console (char 27))
-  (cprint console (char 91))
-  (cprint console c))
+(defn print-escape-seq [console c]
+  (print console (char 27))
+  (print console (char 91))
+  (print console c))
 
-(defn add-to-history [console command]
+(defn history-add [console command]
   (-> (:reader console)
       .getHistory
       (.add (str command "\r"))))
 
-(defn remove-n-from-history [console n]
-  (let [history (-> (:reader console)
-                    .getHistory)]
-    (dotimes [_ n]
-      (.removeLast history))))
+(defn history-remove-last [console]
+  (-> (:reader console)
+      .getHistory
+      .removeLast))
