@@ -10,4 +10,5 @@
                  [jline "2.12.1"]]
   :main ^:skip-aot multi-repl.core
   :target-path "target/%s"
-  :profiles {:uberjar {:aot :all}})
+  :profiles {:uberjar {:aot :all}}
+  :bootclasspath true)

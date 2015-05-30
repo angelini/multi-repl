@@ -34,9 +34,20 @@
                                      "error" :error
                                      "etype" :etype}))
 
+(defn test-for-error [repl]
+  (let [proc (:proc repl)]
+    (try
+      (.exitValue (-> repl :proc :process))
+      (slurp (:err proc))
+      (catch IllegalThreadStateException e false))))
+
 (defn eval [repl statement]
   (let [{:keys [sink source proc]} repl
         message {:statement statement}]
-    (msgpack/pack-stream message sink)
-    (.flush sink)
-    (format-response (msgpack/unpack-stream source))))
+    (if-let [error (test-for-error repl)]
+      (do (print-err ";; REPL error")
+          (print-err error)
+          (System/exit 1))
+      (do (msgpack/pack-stream message sink)
+          (.flush sink)
+          (format-response (msgpack/unpack-stream source))))))
