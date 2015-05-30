@@ -6,6 +6,11 @@
             [multi-repl.buffer :as bu])
   (:gen-class))
 
+(defn buffer->key [buffer]
+  (-> (str "%- " buffer)
+      (clojure.string/replace "\n" "   ")
+      (#(subs % 0 (min (count %) 20)))))
+
 (defn eval-and-print [system line]
   (print-err "line" line)
   (let [{:keys [repl console]} system
@@ -15,21 +20,24 @@
           (co/println console "ERROR:" error))
       (co/println console result))))
 
-(defmulti run-line (fn [system line] line))
+(defmulti run-line (fn [system line lookup] line))
 
-(defmethod run-line "%b" [system line]
+(defmethod run-line "%b" [system line lookup]
   (let [console (:console system)
         buffer (bu/read-buffer console)]
     (eval-and-print system buffer)
-    (co/history-remove-last console)
-    (co/history-add console buffer)))
+    [(buffer->key buffer) buffer]))
 
-(defmethod run-line "exit" [system _]
+(defmethod run-line "exit" [system line lookup]
   (component/stop system)
   (System/exit 0))
 
-(defmethod run-line :default [system line]
-  (eval-and-print system line))
+(defmethod run-line :default [system line lookup]
+  (if-let [buffer (get lookup line)]
+    (do (eval-and-print system buffer)
+        [line buffer])
+    (do (eval-and-print system line)
+        [line (clojure.string/trim line)])))
 
 (def commands
   {:python ["python" "-u" "python-repl.py"]})
@@ -42,6 +50,13 @@
   (let [system (-> (new-system "> " :python)
                    component/start)
         console (:console system)]
-    (loop [line (co/read-line console)]
-      (run-line system line)
-      (recur (co/read-line console)))))
+    (loop [line (co/read-line console)
+           lookup {}]
+      (let [[key entry] (run-line system line lookup)]
+        (print-err "key" key)
+        (print-err "entry" entry)
+        (print-err "lookup" lookup)
+        (co/history-remove-last console)
+        (co/history-add console key)
+        (recur (co/read-line console)
+               (assoc lookup key entry))))))

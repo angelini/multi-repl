@@ -13,9 +13,6 @@
   (min (inc x) maximum))
 
 (defn insert [vec pos item]
-  (print-err "vec" vec)
-  (print-err "pos" pos)
-  (print-err "item" item)
   (apply conj (subvec vec 0 pos) item (subvec vec pos)))
 
 (defn insert-char [buffer [x y] c]
@@ -33,8 +30,6 @@
   (loop [buffer [[]]
          cursor [0 0]
          c (co/read-char console)]
-    (print-err "buffer" buffer)
-    (print-err "cursor" cursor)
     (co/print console (char c))
     (cond
       (escape? c) (let [[c1 c2] [(co/read-char console)
