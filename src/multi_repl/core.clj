@@ -52,11 +52,10 @@
         console (:console system)]
     (loop [line (co/read-line console)
            lookup {}]
-      (let [[key entry] (run-line system line lookup)]
-        (print-err "key" key)
-        (print-err "entry" entry)
-        (print-err "lookup" lookup)
+      (let [[key entry] (run-line system line lookup)
+            history (-> console :reader .getHistory)]
         (co/history-remove-last console)
         (co/history-add console key)
+        (.flush history)
         (recur (co/read-line console)
                (assoc lookup key entry))))))

@@ -3,7 +3,8 @@
   (:require [com.stuartsierra.component :as component]
             [multi-repl.utils :refer (print-err)])
   (:import [java.io PrintWriter]
-           [jline.console ConsoleReader]))
+           [jline.console ConsoleReader]
+           [jline.console.history FileHistory]))
 
 (defrecord Console [prompt reader out]
   component/Lifecycle
@@ -12,8 +13,11 @@
     (if reader
       this
       (let [reader (ConsoleReader.)
+            history (FileHistory. (clojure.java.io/file "/tmp/history"))
             out (PrintWriter. (.getOutput reader))]
         (.setPrompt reader "> ")
+        (.setAutoTrim history true)
+        (.setHistory reader history)
         (print-err ";; Starting console")
         (assoc this
                :reader reader
