@@ -6,6 +6,8 @@
             [multi-repl.buffer :as bu])
   (:gen-class))
 
+;; TODO: Save lookup to disk
+
 (defn buffer->key [buffer]
   (-> (str "%- " buffer)
       (clojure.string/replace "\n" "   ")

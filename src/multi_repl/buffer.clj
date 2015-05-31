@@ -2,6 +2,9 @@
   (:require [multi-repl.utils :refer (print-err)]
             [multi-repl.console :as co]))
 
+;; TODO: Add support for backspace
+;; TODO: Implement start-buffer with arg for initial rows
+
 (defn newline? [c] (= c 13))
 (defn escape?  [c] (= c 27))
 (defn percent? [c] (= c 37))

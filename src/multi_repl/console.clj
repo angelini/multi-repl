@@ -6,6 +6,8 @@
            [jline.console ConsoleReader]
            [jline.console.history FileHistory]))
 
+;; TODO: Move history to a top level property on Console
+
 (defrecord Console [prompt reader out]
   component/Lifecycle
 
